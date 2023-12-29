@@ -182,6 +182,72 @@ let private productionOrder102 =
         status = "OK"
     }
 
+//PRODUCTIONORDER
+//You cannot delete records from the parent tables (Products, Operators, Machines) if there are corresponding child records in the ProductionOrder table.
+//To resolve this issue, delete ProductionOrder records first (ale potom do te tabulky nestrkej znovu data, jako v mem pripade)
+
+let private queryDeleteAll3 = "DELETE FROM ProductionOrder"
+let private queryInsert3 = 
+    "INSERT INTO ProductionOrder (OrderID, ProductID, OperatorID, MachineID, Quantity, StartTime, EndTime, Status) 
+    VALUES (:OrderID, :ProductID, :OperatorID, :MachineID, :Quantity, :StartTime, :EndTime, :Status)"
+    
+let private insertProductionOrder getConnection closeConnection =
+    
+    try
+        let connection: OracleConnection = getConnection()
+                 
+        try
+            let result =
+                pyramidOfDoom 
+                        {
+                            let! cmdDeleteAll = new OracleCommand(queryDeleteAll3, connection) |> Option.ofNull, Error "DeleteError"                                    
+                            let! cmdInsert = new OracleCommand(queryInsert3, connection) |> Option.ofNull, Error "InsertError"   
+    
+                            return Ok (cmdDeleteAll, cmdInsert)                     
+                        }
+    
+            match result with            
+            | Error err -> 
+                            Error err
+            | Ok value  -> 
+                            let (cmdDeleteAll, cmdInsert) = value
+                            
+                            use cmdDeleteAll = cmdDeleteAll
+                            use cmdInsert = cmdInsert
+                            
+                            let rowsAffected = 
+                                cmdDeleteAll.ExecuteNonQuery()
+                                ::                
+                                (
+                                    [ productionOrder101; productionOrder102 ]
+                                    |> List.map
+                                        (fun productionOrder ->
+                                                            cmdInsert.Parameters.Clear() // Clear parameters for each iteration
+                                                            cmdInsert.Parameters.Add(":OrderID", OracleDbType.Int32).Value <- productionOrder.orderID
+                                                            cmdInsert.Parameters.Add(":ProductID", OracleDbType.Int32).Value <- productionOrder.productID
+                                                            cmdInsert.Parameters.Add(":OperatorID", OracleDbType.Int32).Value <- productionOrder.operatorID
+                                                            cmdInsert.Parameters.Add(":MachineID", OracleDbType.Int32).Value <- productionOrder.machineID
+                                                            cmdInsert.Parameters.Add(":Quantity", OracleDbType.Double).Value <- productionOrder.quantity
+                                                            cmdInsert.Parameters.Add(":StartTime", OracleDbType.Date).Value <- productionOrder.startTime
+                                                            cmdInsert.Parameters.Add(":EndTime", OracleDbType.Date).Value <- productionOrder.endTime
+                                                            cmdInsert.Parameters.Add(":Status", OracleDbType.Varchar2).Value <- productionOrder.status
+                                                            cmdInsert.ExecuteNonQuery() 
+                                        )
+                                )
+                   
+                            match rowsAffected |> List.sum with 
+                            | 0 -> Error "InsertOrDeleteError"                               
+                            | _ -> Ok ()                             
+                
+        finally
+            closeConnection connection
+    with
+    | ex ->
+            printfn "%s" ex.Message
+            Error ex.Message
+    
+//insertProductionOrder getConnection closeConnection |> ignore
+
 //PRODUCTS
 let private queryDeleteAll = "DELETE FROM Products"
 let private queryInsert = "INSERT INTO Products (ProductID, ProductName, Description) VALUES (:ProductID, :ProductName, :Description)"                    
@@ -202,7 +268,7 @@ let private insertOrUpdateProducts getConnection closeConnection =
                          let! cmdDeleteAll = new OracleCommand(queryDeleteAll, connection) |> Option.ofNull, Error "DeleteError"                                    
                          let! cmdInsert = new OracleCommand(queryInsert, connection) |> Option.ofNull, Error "InsertError"   
                          let cmdUpdate productID = new OracleCommand(queryUpdate productID, connection)
-                         //let! cmdUpdate = cmdUpdate |> Option.ofNull, Error "UpdateError" //tohle nerobi to, co bych chtel
+                         //let! cmdUpdate = cmdUpdate |> Option.ofNull, Error "UpdateError" //tohle nerobi to, co ocekavam (partially applied fn nelze zachytit)
                          return Ok (cmdDeleteAll, cmdInsert, cmdUpdate)                     
                      }
 
@@ -219,15 +285,15 @@ let private insertOrUpdateProducts getConnection closeConnection =
                              cmdDeleteAll.ExecuteNonQuery()
                              ::                
                              (
-                             [ productsId1; productsId2; productsId3; productsId4 ]
-                             |> List.map
-                                 (fun productsId ->
-                                                  cmdInsert.Parameters.Clear() // Clear parameters for each iteration
-                                                  cmdInsert.Parameters.Add(":ProductID", OracleDbType.Int32).Value <- productsId.productID
-                                                  cmdInsert.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- productsId.productName
-                                                  cmdInsert.Parameters.Add(":Description", OracleDbType.Varchar2).Value <- productsId.description
-                                                  cmdInsert.ExecuteNonQuery() 
-                                 )
+                                 [ productsId1; productsId2; productsId3; productsId4 ]
+                                 |> List.map
+                                     (fun productsId ->
+                                                      cmdInsert.Parameters.Clear() // Clear parameters for each iteration
+                                                      cmdInsert.Parameters.Add(":ProductID", OracleDbType.Int32).Value <- productsId.productID
+                                                      cmdInsert.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- productsId.productName
+                                                      cmdInsert.Parameters.Add(":Description", OracleDbType.Varchar2).Value <- productsId.description
+                                                      cmdInsert.ExecuteNonQuery() 
+                                     )
                              )
                
                          match rowsAffected |> List.sum with 
@@ -238,8 +304,8 @@ let private insertOrUpdateProducts getConnection closeConnection =
                                   ([ 2; 4 ], ["Slab No.16"; "Slab No.32"])
                                   ||> List.map2
                                       (fun productId productName ->
-                                                                  let update = (cmdUpdate <| string productId) |> Option.ofNull
-                                                                  match update with
+                                                                  let update = cmdUpdate >> Option.ofNull
+                                                                  match update <| string productId with
                                                                   | Some update -> 
                                                                                  update.Parameters.Clear()                                  
                                                                                  update.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- productName
@@ -260,7 +326,7 @@ let private insertOrUpdateProducts getConnection closeConnection =
           printfn "%s" ex.Message
           Error ex.Message
 
-insertOrUpdateProducts getConnection closeConnection |> ignore
+//insertOrUpdateProducts getConnection closeConnection |> ignore
 
 //OPERATORS
 let private queryDeleteAll1 = "DELETE FROM Operators"
@@ -294,16 +360,16 @@ let private insertOperators getConnection closeConnection =
                              cmdDeleteAll.ExecuteNonQuery()
                              ::                
                              (
-                             [ operatorsId1; operatorsId2 ]
-                             |> List.map
-                                 (fun operatorsId ->
-                                                   cmdInsert.Parameters.Clear() // Clear parameters for each iteration
-                                                   cmdInsert.Parameters.Add(":OperatorID", OracleDbType.Int32).Value <- operatorsId.operatorID
-                                                   cmdInsert.Parameters.Add(":FirstName", OracleDbType.Varchar2).Value <- operatorsId.firstName
-                                                   cmdInsert.Parameters.Add(":LastName", OracleDbType.Varchar2).Value <- operatorsId.lastName
-                                                   cmdInsert.Parameters.Add(":JobTitle", OracleDbType.Varchar2).Value <- operatorsId.jobTitle
-                                                   cmdInsert.ExecuteNonQuery() 
-                                 )
+                                 [ operatorsId1; operatorsId2 ]
+                                 |> List.map
+                                     (fun operatorsId ->
+                                                       cmdInsert.Parameters.Clear() // Clear parameters for each iteration
+                                                       cmdInsert.Parameters.Add(":OperatorID", OracleDbType.Int32).Value <- operatorsId.operatorID
+                                                       cmdInsert.Parameters.Add(":FirstName", OracleDbType.Varchar2).Value <- operatorsId.firstName
+                                                       cmdInsert.Parameters.Add(":LastName", OracleDbType.Varchar2).Value <- operatorsId.lastName
+                                                       cmdInsert.Parameters.Add(":JobTitle", OracleDbType.Varchar2).Value <- operatorsId.jobTitle
+                                                       cmdInsert.ExecuteNonQuery() 
+                                     )
                              )
                
                          match rowsAffected |> List.sum with 
@@ -317,7 +383,7 @@ let private insertOperators getConnection closeConnection =
           printfn "%s" ex.Message
           Error ex.Message
 
-insertOperators getConnection closeConnection |> ignore
+//insertOperators getConnection closeConnection |> ignore
 
 //MACHINES
 let private queryDeleteAll2 = "DELETE FROM Machines"
@@ -351,15 +417,15 @@ let private insertMachines getConnection closeConnection =
                              cmdDeleteAll.ExecuteNonQuery()
                              ::                
                              (
-                             [ machinesId1; machinesId2 ]
-                             |> List.map
-                                 (fun machinesId ->
-                                                  cmdInsert.Parameters.Clear() // Clear parameters for each iteration
-                                                  cmdInsert.Parameters.Add(":MachineID", OracleDbType.Int32).Value <- machinesId.machineID
-                                                  cmdInsert.Parameters.Add(":MachineName", OracleDbType.Varchar2).Value <- machinesId.machineName
-                                                  cmdInsert.Parameters.Add(":Location", OracleDbType.Varchar2).Value <- machinesId.location
-                                                  cmdInsert.ExecuteNonQuery() 
-                                 )
+                                 [ machinesId1; machinesId2 ]
+                                 |> List.map
+                                     (fun machinesId ->
+                                                      cmdInsert.Parameters.Clear() // Clear parameters for each iteration
+                                                      cmdInsert.Parameters.Add(":MachineID", OracleDbType.Int32).Value <- machinesId.machineID
+                                                      cmdInsert.Parameters.Add(":MachineName", OracleDbType.Varchar2).Value <- machinesId.machineName
+                                                      cmdInsert.Parameters.Add(":Location", OracleDbType.Varchar2).Value <- machinesId.location
+                                                      cmdInsert.ExecuteNonQuery() 
+                                     )
                              )
                
                          match rowsAffected |> List.sum with 
@@ -373,67 +439,5 @@ let private insertMachines getConnection closeConnection =
           printfn "%s" ex.Message
           Error ex.Message
 
-insertMachines getConnection closeConnection |> ignore
+//insertMachines getConnection closeConnection |> ignore
 
-//PRODUCTIONORDER
-let private queryDeleteAll3 = "DELETE FROM ProductionOrder"
-let private queryInsert3 = 
-    "INSERT INTO ProductionOrder (OrderID, ProductID, OperatorID, MachineID, Quantity, StartTime, EndTime, Status) 
-    VALUES (:OrderID, :ProductID, :OperatorID, :MachineID, :Quantity, :StartTime, :EndTime, :Status)"
-
-let private insertProductionOrder getConnection closeConnection =
-
-    try
-        let connection: OracleConnection = getConnection()
-             
-        try
-            let result =
-                pyramidOfDoom 
-                     {
-                         let! cmdDeleteAll = new OracleCommand(queryDeleteAll3, connection) |> Option.ofNull, Error "DeleteError"                                    
-                         let! cmdInsert = new OracleCommand(queryInsert3, connection) |> Option.ofNull, Error "InsertError"   
-
-                         return Ok (cmdDeleteAll, cmdInsert)                     
-                     }
-
-            match result with            
-            | Error err -> 
-                         Error err
-            | Ok value  -> 
-                         let (cmdDeleteAll, cmdInsert) = value
-                        
-                         use cmdDeleteAll = cmdDeleteAll
-                         use cmdInsert = cmdInsert
-                        
-                         let rowsAffected = 
-                             cmdDeleteAll.ExecuteNonQuery()
-                             ::                
-                             (
-                             [ productionOrder101; productionOrder102 ]
-                             |> List.map
-                                 (fun productionOrder ->
-                                                      cmdInsert.Parameters.Clear() // Clear parameters for each iteration
-                                                      cmdInsert.Parameters.Add(":OrderID", OracleDbType.Int32).Value <- productionOrder.orderID
-                                                      cmdInsert.Parameters.Add(":ProductID", OracleDbType.Int32).Value <- productionOrder.productID
-                                                      cmdInsert.Parameters.Add(":OperatorID", OracleDbType.Int32).Value <- productionOrder.operatorID
-                                                      cmdInsert.Parameters.Add(":MachineID", OracleDbType.Int32).Value <- productionOrder.machineID
-                                                      cmdInsert.Parameters.Add(":Quantity", OracleDbType.Double).Value <- productionOrder.quantity
-                                                      cmdInsert.Parameters.Add(":StartTime", OracleDbType.Date).Value <- productionOrder.startTime
-                                                      cmdInsert.Parameters.Add(":EndTime", OracleDbType.Date).Value <- productionOrder.endTime
-                                                      cmdInsert.Parameters.Add(":Status", OracleDbType.Varchar2).Value <- productionOrder.status
-                                                      cmdInsert.ExecuteNonQuery() 
-                                 )
-                             )
-               
-                         match rowsAffected |> List.sum with 
-                         | 0 -> Error "InsertOrDeleteError"                               
-                         | _ -> Ok ()                             
-            
-        finally
-            closeConnection connection
-    with
-    | ex ->
-          printfn "%s" ex.Message
-          Error ex.Message
-
-insertProductionOrder getConnection closeConnection |> ignore

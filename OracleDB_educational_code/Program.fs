@@ -5,7 +5,7 @@ open Oracle.ManagedDataAccess.Client
 open FsToolkit.ErrorHandling
 
 (*
-//tabulky vytvoreny pres Oracle SQL Developer
+//tabulky vytvorene pres Oracle SQL Developer
 
 CREATE TABLE Products (
     ProductID INT NOT NULL PRIMARY KEY,
@@ -307,6 +307,7 @@ let private insertOrUpdateProducts getConnection closeConnection =
                                                                   let update = cmdUpdate >> Option.ofNull
                                                                   match update <| string productId with
                                                                   | Some update -> 
+                                                                                 use update = update  
                                                                                  update.Parameters.Clear()                                  
                                                                                  update.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- productName
                                                                                  update.ExecuteNonQuery() 

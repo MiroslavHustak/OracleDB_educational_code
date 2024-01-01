@@ -231,9 +231,9 @@ let internal insertOrUpdateProductionOrder getConnection closeConnection =
                                  | 0 -> 
                                       Error "InsertOrDeleteError"                               
                                  | _ -> 
-                                      match cmdUpdate.ExecuteNonQuery() |> Option.ofNull with  //rowsAffectedUpdate                                       
-                                      | Some value when value > 0 -> Ok ()      
-                                      | _                         -> Error "UpdateError"    
+                                      match cmdUpdate.ExecuteNonQuery() with  //rowsAffectedUpdate                                       
+                                      | value when value > 0 -> Ok ()      
+                                      | _                    -> Error "UpdateError"    
         finally
             closeConnection connection
     with
@@ -301,7 +301,7 @@ let internal insertOrUpdateProducts getConnection closeConnection =
                                                                              use update = update  
                                                                              update.Parameters.Clear()                                  
                                                                              update.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- p_Name
-                                                                             update.ExecuteNonQuery() |> Option.ofNull 
+                                                                             update.ExecuteNonQuery >> Option.ofNull <| ()
                                                                              //toto neni nullable, pouzito jen quli practising code pro Option.bind
                                                                              //nejdrive testovat na ofObj a ofNullable, pote az ofNull
                                                                 )                                                                  

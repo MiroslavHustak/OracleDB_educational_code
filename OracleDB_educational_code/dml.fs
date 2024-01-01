@@ -226,14 +226,14 @@ let internal insertOrUpdateProductionOrder getConnection closeConnection =
                                                    cmdInsert.ExecuteNonQuery() 
                                      )
                              ) 
-                             |> List.sum
+                             |> List.exists (fun item -> item <= 0)
                              |> function   //rowsAffected 
-                                 | 0 -> 
-                                      Error "InsertOrDeleteError"                               
-                                 | _ -> 
-                                      match cmdUpdate.ExecuteNonQuery() with  //rowsAffectedUpdate                                       
-                                      | value when value > 0 -> Ok ()      
-                                      | _                    -> Error "UpdateError"    
+                                 | true -> 
+                                         Error "InsertOrDeleteError"                               
+                                 | _    -> 
+                                         match cmdUpdate.ExecuteNonQuery() with  //rowsAffectedUpdate                                       
+                                         | value when value > 0 -> Ok ()      
+                                         | _                    -> Error "UpdateError"    
         finally
             closeConnection connection
     with
@@ -287,29 +287,29 @@ let internal insertOrUpdateProducts getConnection closeConnection =
                                                 cmdInsert.ExecuteNonQuery() 
                                      )
                              ) 
-                             |> List.sum               
+                             |> List.exists (fun item -> item <= 0)              
                              |> function   //rowsAffected
-                                 | 0 ->
-                                      Error "InsertOrDeleteError" 
-                                 | _ ->
-                                      ([ productsId2.productID; productsId4.productID ], ["Slab No.16"; "Slab No.32"])
-                                      ||> List.map2
-                                          (fun p_Id p_Name ->
-                                                            (cmdUpdate >> Option.ofNull) <| string p_Id
-                                                            |> Option.bind
-                                                                (fun update -> 
-                                                                             use update = update  
-                                                                             update.Parameters.Clear()                                  
-                                                                             update.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- p_Name
-                                                                             update.ExecuteNonQuery >> Option.ofNull <| ()
-                                                                             //toto neni nullable, pouzito jen quli practising code pro Option.bind
-                                                                             //nejdrive testovat na ofObj a ofNullable, pote az ofNull
-                                                                )                                                                  
-                                          ) 
-                                          |> List.exists (fun item -> item = None || item = Some 0)  
-                                          |> function   //rowsAffectedUpdate
-                                              | true -> Error "UpdateError" 
-                                              | _    -> Ok () 
+                                 | true ->
+                                         Error "InsertOrDeleteError" 
+                                 | _    ->
+                                         ([ productsId2.productID; productsId4.productID ], ["Slab No.16"; "Slab No.32"])
+                                         ||> List.map2
+                                             (fun p_Id p_Name ->
+                                                               cmdUpdate >> Option.ofNull <| string p_Id
+                                                               |> Option.bind
+                                                                   (fun update -> 
+                                                                                use update = update  
+                                                                                update.Parameters.Clear()                                  
+                                                                                update.Parameters.Add(":ProductName", OracleDbType.Varchar2).Value <- p_Name
+                                                                                update.ExecuteNonQuery >> Option.ofNull <| ()
+                                                                                //toto neni nullable, pouzito jen quli practising code pro Option.bind
+                                                                                //nejdrive testovat na ofObj a ofNullable, pote az ofNull
+                                                                   )                                                                  
+                                         ) 
+                                         |> List.exists (fun item -> item = None || item = Some 0)  
+                                         |> function   //rowsAffectedUpdate
+                                             | true -> Error "UpdateError" 
+                                             | _    -> Ok () 
         finally
             closeConnection connection
     with
@@ -361,10 +361,10 @@ let internal insertOperators getConnection closeConnection =
                                                 cmdInsert.ExecuteNonQuery() 
                                      ) 
                              ) 
-                             |> List.sum
+                             |> List.exists (fun item -> item <= 0)
                              |> function   //rowsAffected 
-                                 | 0 -> Error "InsertOrDeleteError"                               
-                                 | _ -> Ok ()       
+                                 | true -> Error "InsertOrDeleteError"                               
+                                 | _    -> Ok ()       
         finally
             closeConnection connection
     with
@@ -415,10 +415,10 @@ let internal insertMachines getConnection closeConnection =
                                                 cmdInsert.ExecuteNonQuery() 
                                      )
                              ) 
-                             |> List.sum
+                             |> List.exists (fun item -> item <= 0)
                              |> function   //rowsAffected                             
-                                 | 0 -> Error "InsertOrDeleteError"                               
-                                 | _ -> Ok ()  
+                                 | true -> Error "InsertOrDeleteError"                               
+                                 | _    -> Ok ()  
         finally
             closeConnection connection
     with

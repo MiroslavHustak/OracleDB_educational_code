@@ -7,6 +7,8 @@ open Oracle.ManagedDataAccess.Client
 (*
     ORACLE SQL DEVELOPER
 
+    PL/SQL + SQL
+
     SYS!!!
     GRANT DEBUG CONNECT SESSION TO Test_User;
     GRANT DEBUG ANY PROCEDURE TO Test_User;
@@ -39,6 +41,9 @@ open Oracle.ManagedDataAccess.Client
     /
 
     -- Running the stored procedure in a worksheet
+    EXECUTE testingProcedure(text_param => 'Bleep', number_param => 42);
+
+    -- Running the stored procedure in PL/SQL
     BEGIN
         testingProcedure(text_param => 'Bleep', number_param => 42);
     END;

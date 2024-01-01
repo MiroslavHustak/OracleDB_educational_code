@@ -18,7 +18,7 @@
 
     ORACLE SQL DEVELOPER
 
-    //PL/SQL
+    //SQL
 
     //tabulky vytvorene pres Oracle SQL Developer
 

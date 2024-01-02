@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Functions.fs" />
     <Compile Include="Triggers.fs" />
     <Compile Include="StoredProcedures.fs" />
     <Compile Include="ddl.fs" />

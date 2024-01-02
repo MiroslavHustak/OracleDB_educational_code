@@ -6,6 +6,7 @@ open FsToolkit.ErrorHandling
 open Oracle.ManagedDataAccess.Client
 
 open Triggers
+open Functions
 open StoredProcedures
 
 module Program = 
@@ -36,6 +37,8 @@ module Program =
     //createStoredProcedure getConnection closeConnection |> ignore
     
     //createTrigger getConnection closeConnection |> ignore
+
+    createFunction getConnection closeConnection |> ignore
 
 
     

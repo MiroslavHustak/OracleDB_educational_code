@@ -27,7 +27,7 @@ open Oracle.ManagedDataAccess.Client
           
     *)
 
-let private queryCreateFunction =  //jen zkusebni stored procedure
+let private queryCreateFunction =  //jen zkusebni function
     "   
     CREATE OR REPLACE FUNCTION TESTINGFUNCTION 
     RETURN NUMBER IS --from a PL/SQL block (IS) , vraci hodnotu

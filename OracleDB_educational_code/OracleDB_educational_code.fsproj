@@ -6,6 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Views.fs" />
+    <Compile Include="Records.fs" />
+    <Compile Include="ExplicitCursors.fs" />
     <Compile Include="Functions.fs" />
     <Compile Include="Triggers.fs" />
     <Compile Include="StoredProcedures.fs" />

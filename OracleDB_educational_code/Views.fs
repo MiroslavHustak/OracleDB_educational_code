@@ -1,6 +1,8 @@
 ﻿module Views
 
     (*
+    -- Oracle SQL Developer
+
     -- Standard SQL
 
     CREATE VIEW ProductionOrderView AS

@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="CTEs.fs" />
+    <Compile Include="ITVFs.fs" />
     <Compile Include="Views.fs" />
     <Compile Include="Records.fs" />
     <Compile Include="ExplicitCursors.fs" />

@@ -33,10 +33,11 @@ SELECT * FROM OperatorCTE;
 COMMIT;
 
 *)
+
+open System
 open Helpers
 open FsToolkit.ErrorHandling
 open Oracle.ManagedDataAccess.Client
-open System
 
 [<Struct>]
 type private Builder2 = Builder2 with    
@@ -102,26 +103,35 @@ let internal selectValues getConnection closeConnection =
                                              |> Seq.takeWhile ((=) true) 
                                              |> Seq.collect
                                                  (fun _ ->
+                                                         //V pripade pouziti Oracle zkontroluj skutecny typ sloupce v .NET   
+                                                         let columnType = reader.GetFieldType(reader.GetOrdinal("OperatorID"))
+                                                         printfn "Column Type: %s" columnType.Name
+                                                         
                                                          seq 
-                                                             {                                                 
-                                                                  //Casting.castAs<Int32> reader.["OperatorID"] |> Option.map string  //TODO      
-                                                                  Casting.downCast reader.["OperatorID"] |> Option.map string  //TODO  
-                                                                  //Some (string <| reader.["OperatorID"])      //TODO
+                                                             {    
+                                                                  //Oracle nema INT !!! Oracle by default prevede INT na NUMBER(38, 0)
+                                                                  //Oracle.ManagedDataAccess.Client prevede NUMBER(38, 0) v mem pripade na decimal
+                                                                  Casting.castAs<decimal> reader.["OperatorID"] |> Option.map string      
                                                                   Casting.castAs<string> reader.["FirstName"]                                                                               
                                                                   Casting.castAs<string> reader.["LastName"]
                                                                   Casting.castAs<string> reader.["JobTitle"]   
                                                              } 
                                                  ) 
                                          
-                                         getValues |> Seq.iter (fun item -> printfn "%A" item) //TODO
+                                         //Jen pro overeni
+                                         //
+                                         getValues |> Seq.iter (fun item -> printfn "%A" item) 
                                          
                                          let getValues = 
                                              match getValues |> Seq.forall (fun item -> item.IsSome) with
-                                             | true  -> Ok (getValues |> Seq.choose (fun item -> item))                                       
+                                             | true  -> 
+                                                        getValues |> Seq.choose (fun item -> item) 
+                                                        |> Seq.iter (fun item -> printfn "ee %s" item) 
+                                                        Ok (getValues |> Seq.choose (fun item -> item))                                       
                                              | false -> Error "ReadingDbError"  
                                              
                                          reader.Close() 
-                                         reader.Dispose() 
+                                         reader.Dispose()                                          
 
                                          getValues 
                                         

@@ -2,6 +2,9 @@
 
 open FsToolkit.ErrorHandling
 
+open System
+open System.Drawing.Printing
+
 module Casting =
 
     //for educational purposes only
@@ -10,12 +13,7 @@ module Casting =
         | :? ^a as value -> Some value 
         | _              -> None
 
-    let inline castAs<'a> (o: obj) : 'a option =
+    let internal castAs<'a> (o: obj) : 'a option =    //srtp nefunguje pro tento zpusob type casting 
         match Option.ofNull o with
-        | Some result when obj.ReferenceEquals(result, null) -> None
-        | Some result -> 
-            match result with
-            | :? 'a as casted -> Some casted
-            | _ -> None
-        | _ -> None
-
+        | Some (:? 'a as result) -> Some result
+        | _                      -> None

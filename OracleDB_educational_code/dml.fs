@@ -225,8 +225,8 @@ let internal insertOrUpdateProductionOrder getConnection closeConnection =
                                                    cmdInsert.Parameters.Add(":Status", OracleDbType.Varchar2).Value <- p_Order.status
                                                    cmdInsert.ExecuteNonQuery() 
                                      )
-                             ) 
-                             |> List.exists (fun item -> item <= 0)
+                             )                          
+                             |> List.exists ((<=) 0)  //(fun item -> item <= 0)
                              |> function   //rowsAffected 
                                  | true -> 
                                          Error "InsertOrDeleteError"                               
@@ -287,7 +287,7 @@ let internal insertOrUpdateProducts getConnection closeConnection =
                                                 cmdInsert.ExecuteNonQuery() 
                                      )
                              ) 
-                             |> List.exists (fun item -> item <= 0)              
+                             |> List.exists ((<=) 0)             
                              |> function   //rowsAffected
                                  | true ->
                                          Error "InsertOrDeleteError" 

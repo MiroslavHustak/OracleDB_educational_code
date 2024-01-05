@@ -130,8 +130,8 @@ let internal selectValues getConnection closeConnection =
                                              //Jen pro overeni                                         
                                              getValues |> List.iter (fun item -> printfn "%A" item) 
                                                                                 
-                                             let getValues = //u Seq to dava prazdnou kolekci                                             
-                                                 match getValues |> List.forall (fun item -> item.IsSome) with
+                                             let getValues = //u Seq to dava prazdnou kolekci - viz varovani vyse                                             
+                                                 match getValues |> List.forall _.IsSome with
                                                  | true  -> Ok (getValues |> List.choose id)                                       
                                                  | false -> Error "ReadingDbError"  
                                          

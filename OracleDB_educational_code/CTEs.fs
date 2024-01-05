@@ -35,6 +35,7 @@ COMMIT;
 *)
 
 open System
+open System.IO
 open Helpers
 open FsToolkit.ErrorHandling
 open Oracle.ManagedDataAccess.Client
@@ -104,6 +105,8 @@ let internal selectValues getConnection closeConnection =
                                              |> Seq.collect
                                                  (fun _ ->
                                                          //V pripade pouziti Oracle zkontroluj skutecny typ sloupce v .NET   
+
+                                                         //Jen pro overeni 
                                                          let columnType = reader.GetFieldType(reader.GetOrdinal("OperatorID"))
                                                          printfn "Column Type: %s" columnType.Name
                                                          
@@ -111,27 +114,31 @@ let internal selectValues getConnection closeConnection =
                                                              {    
                                                                   //Oracle nema INT !!! Oracle by default prevede INT na NUMBER(38, 0)
                                                                   //Oracle.ManagedDataAccess.Client prevede NUMBER(38, 0) v mem pripade na decimal
-                                                                  Casting.castAs<decimal> reader.["OperatorID"] |> Option.map string      
+                                                                  Casting.castAs<decimal> reader.["OperatorID"] 
+                                                                  |> Option.bind (fun item -> Option.filter (fun item -> not (item.Equals(String.Empty))) (Some (string item))) 
                                                                   Casting.castAs<string> reader.["FirstName"]                                                                               
                                                                   Casting.castAs<string> reader.["LastName"]
                                                                   Casting.castAs<string> reader.["JobTitle"]   
                                                              } 
-                                                 ) 
+                                                 ) |> List.ofSeq 
+                                                 
+                                         //Pozor na nize uvedene problemy, uz jsem to nekde jinde zazil
+                                         //In F#, a sequence is lazily evaluated, while a list is eagerly evaluated. 
+                                         //This means that certain operations on sequences might not be executed until they are explicitly enumerated. 
                                          
-                                         //Jen pro overeni
-                                         //
-                                         getValues |> Seq.iter (fun item -> printfn "%A" item) 
-                                         
-                                         let getValues = 
-                                             match getValues |> Seq.forall (fun item -> item.IsSome) with
-                                             | true  -> 
-                                                        getValues |> Seq.choose (fun item -> item) 
-                                                        |> Seq.iter (fun item -> printfn "ee %s" item) 
-                                                        Ok (getValues |> Seq.choose (fun item -> item))                                       
+                                         //Jen pro overeni                                         
+                                         getValues |> List.iter (fun item -> printfn "%A" item) 
+                                                                                
+                                         let getValues = //u Seq to dava prazdnou kolekci                                             
+                                             match getValues |> List.forall (fun item -> item.IsSome) with
+                                             | true  -> Ok (getValues |> List.choose id)                                       
                                              | false -> Error "ReadingDbError"  
-                                             
+                                         
+                                         //Jen pro overeni                                         
+                                         getValues |> function Ok value -> value |> List.iter (fun item -> printfn "%s" item) | Error err -> ()
+                                         
                                          reader.Close() 
-                                         reader.Dispose()                                          
+                                         reader.Dispose()     
 
                                          getValues 
                                         

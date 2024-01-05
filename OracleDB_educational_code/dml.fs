@@ -361,7 +361,7 @@ let internal insertOperators getConnection closeConnection =
                                                 cmdInsert.ExecuteNonQuery() 
                                      ) 
                              ) 
-                             |> List.exists (fun item -> item <= 0)
+                             |> List.exists ((<=) 0)
                              |> function   //rowsAffected 
                                  | true -> Error "InsertOrDeleteError"                               
                                  | _    -> Ok ()       

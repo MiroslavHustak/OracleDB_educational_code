@@ -17,3 +17,15 @@ module Casting =
         match Option.ofNull o with
         | Some (:? 'a as result) -> Some result
         | _                      -> None
+
+module Option = 
+
+    let internal fromBool value =                           
+        function   
+        | true  -> Some value  
+        | false -> None
+
+    let internal ofBool =                           
+        function   
+        | true  -> Some ()  
+        | false -> None

@@ -50,7 +50,9 @@ type private Builder2 = Builder2 with
 
 let private pyramidOfDoom = Builder2
 
-let queryExists = @"SELECT 1 FROM user_tables WHERE table_name = 'Operators';"
+//ja vim, kontrola na Has.Rows (overeni existence tabulky) sice nize je, ale pro jistotu jeste predtim overeni existence tabulky
+let queryExists = @"SELECT COUNT(*) FROM Operators" 
+
 let querySelect = 
     @"
      WITH OperatorCTE AS
@@ -84,66 +86,65 @@ let internal selectValues getConnection closeConnection =
                              let (cmdExists, cmdSelect) = value
                         
                              use cmdExists = cmdExists
-                             use cmdSelect = cmdSelect
-                                                      
-                             let reader =
-                                 //match cmdExists.ExecuteScalar() |> Option.ofNull with //TODO
-                                 match Some 1 with //TODO                                 
-                                 | Some _ ->
-                                           match cmdSelect.ExecuteReader() |> Option.ofNull with
-                                           | Some reader -> Ok reader
-                                           | None        -> Error "ReaderError"
-                                          
-                                 | None   ->
-                                           Error "Operators table not existing"     
-                             
-                             match reader with
-                             | Ok reader ->
-                                         let getValues =                                                 
-                                             Seq.initInfinite (fun _ -> reader.Read() && reader.HasRows = true)
-                                             |> Seq.takeWhile ((=) true) 
-                                             |> Seq.collect
-                                                 (fun _ ->
-                                                         //V pripade pouziti Oracle zkontroluj skutecny typ sloupce v .NET   
+                             use cmdSelect = cmdSelect                                                      
+                            
+                             pyramidOfDoom 
+                                 {
+                                     //Bohuzel aji tady Oracle vraci decimal misto int 
+                                     let! count = cmdExists.ExecuteScalar() |> Casting.castAs<decimal>, Error "Operators table not existing"                                   
+                                     let! _ = int count > 0 |> Option.ofBool, Error "Operators table not existing"   
+                                     let! reader = cmdSelect.ExecuteReader() |> Option.ofNull, Error "ReaderError"  
 
-                                                         //Jen pro overeni 
-                                                         let columnType = reader.GetFieldType(reader.GetOrdinal("OperatorID"))
-                                                         printfn "Column Type: %s" columnType.Name
+                                     return Ok reader                     
+                                 }
+                                     
+                             |> function
+                                 | Ok reader ->
+                                             let getValues =                                                 
+                                                 Seq.initInfinite (fun _ -> reader.Read() && reader.HasRows = true)
+                                                 |> Seq.takeWhile ((=) true) 
+                                                 |> Seq.collect
+                                                     (fun _ ->
+                                                             //V pripade pouziti Oracle zkontroluj skutecny typ sloupce v .NET   
+
+                                                             //Jen pro overeni 
+                                                             let columnType = reader.GetFieldType(reader.GetOrdinal("OperatorID"))
+                                                             printfn "Column Type: %s" columnType.Name
                                                          
-                                                         seq 
-                                                             {    
-                                                                  //Oracle nema INT !!! Oracle by default prevede INT na NUMBER(38, 0)
-                                                                  //Oracle.ManagedDataAccess.Client prevede NUMBER(38, 0) v mem pripade na decimal
-                                                                  Casting.castAs<decimal> reader.["OperatorID"] 
-                                                                  |> Option.bind (fun item -> Option.filter (fun item -> not (item.Equals(String.Empty))) (Some (string item))) 
-                                                                  Casting.castAs<string> reader.["FirstName"]                                                                               
-                                                                  Casting.castAs<string> reader.["LastName"]
-                                                                  Casting.castAs<string> reader.["JobTitle"]   
-                                                             } 
-                                                 ) |> List.ofSeq 
+                                                             seq 
+                                                                 {    
+                                                                      //Oracle nema INT !!! Oracle by default prevede INT na NUMBER(38, 0)
+                                                                      //Oracle.ManagedDataAccess.Client prevede NUMBER(38, 0) v mem pripade na decimal
+                                                                      Casting.castAs<decimal> reader.["OperatorID"] 
+                                                                      |> Option.bind (fun item -> Option.filter (fun item -> not (item.Equals(String.Empty))) (Some (string item))) 
+                                                                      Casting.castAs<string> reader.["FirstName"]                                                                               
+                                                                      Casting.castAs<string> reader.["LastName"]
+                                                                      Casting.castAs<string> reader.["JobTitle"]   
+                                                                 } 
+                                                     ) |> List.ofSeq 
                                                  
-                                         //Pozor na nize uvedene problemy, uz jsem to nekde jinde zazil
-                                         //In F#, a sequence is lazily evaluated, while a list is eagerly evaluated. 
-                                         //This means that certain operations on sequences might not be executed until they are explicitly enumerated. 
+                                             //Pozor na nize uvedene problemy, uz jsem to nekde jinde zazil
+                                             //In F#, a sequence is lazily evaluated, while a list is eagerly evaluated. 
+                                             //This means that certain operations on sequences might not be executed until they are explicitly enumerated. 
                                          
-                                         //Jen pro overeni                                         
-                                         getValues |> List.iter (fun item -> printfn "%A" item) 
+                                             //Jen pro overeni                                         
+                                             getValues |> List.iter (fun item -> printfn "%A" item) 
                                                                                 
-                                         let getValues = //u Seq to dava prazdnou kolekci                                             
-                                             match getValues |> List.forall (fun item -> item.IsSome) with
-                                             | true  -> Ok (getValues |> List.choose id)                                       
-                                             | false -> Error "ReadingDbError"  
+                                             let getValues = //u Seq to dava prazdnou kolekci                                             
+                                                 match getValues |> List.forall (fun item -> item.IsSome) with
+                                                 | true  -> Ok (getValues |> List.choose id)                                       
+                                                 | false -> Error "ReadingDbError"  
                                          
-                                         //Jen pro overeni                                         
-                                         getValues |> function Ok value -> value |> List.iter (fun item -> printfn "%s" item) | Error err -> ()
+                                             //Jen pro overeni                                         
+                                             getValues |> function Ok value -> value |> List.iter (fun item -> printfn "%s" item) | Error err -> ()
                                          
-                                         reader.Close() 
-                                         reader.Dispose()     
+                                             reader.Close() 
+                                             reader.Dispose()     
 
-                                         getValues 
+                                             getValues 
                                         
-                             | Error err ->
-                                         Error err                            
+                                 | Error err ->
+                                             Error err                            
         finally
             closeConnection connection
     with

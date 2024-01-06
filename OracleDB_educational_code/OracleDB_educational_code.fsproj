@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Helpers.fs" />
     <Compile Include="DerivedTables.fs" />
     <Compile Include="WindowFunctions.fs" />
-    <Compile Include="Helpers.fs" />
     <Compile Include="CTEs.fs" />
     <Compile Include="ITVFs.fs" />
     <Compile Include="Views.fs" />

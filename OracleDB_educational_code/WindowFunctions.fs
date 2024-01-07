@@ -73,7 +73,6 @@
     Window functions in SQL typically operate over a window of rows defined by the OVER clause, and they produce a result for each row within that window.
     The result is not a single scalar value but is associated with each row in the result set. The window functions are applied to a set of rows related to 
 
-
     Aggregate Window Function:
     The AVG function calculates the average length of first names for each job title.
     The result is associated with each row, and you get a result for every row in the output.
@@ -89,11 +88,9 @@
     *)
 
 open System
-open System.IO
 open Helpers
 open FsToolkit.ErrorHandling
 open Oracle.ManagedDataAccess.Client
-
     
 [<Struct>]
 type private Builder2 = Builder2 with    

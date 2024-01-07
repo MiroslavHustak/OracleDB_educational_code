@@ -8,6 +8,7 @@ open Oracle.ManagedDataAccess.Client
 open CTEs
 open Triggers
 open Functions
+open DerivedTables
 open WindowFunctions
 open StoredProcedures
 
@@ -44,7 +45,10 @@ module Program =
 
     //selectValuesCTE getConnection closeConnection |> ignore
 
-    selectValuesWF getConnection closeConnection |> ignore
+    //selectValuesWF getConnection closeConnection |> ignore
+
+    selectValuesDT getConnection closeConnection |> ignore
+
 
     
 

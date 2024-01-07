@@ -35,6 +35,5 @@ a function that returns a table-like structure as its result. This result set ca
 In T-SQL, an inline table-valued function is typically created using the RETURNS TABLE syntax, and it returns a table structure.
 
 In Oracle SQL, a similar concept is achieved using a table function that returns a result set (commonly using the SYS_REFCURSOR type).
-
 *)
 

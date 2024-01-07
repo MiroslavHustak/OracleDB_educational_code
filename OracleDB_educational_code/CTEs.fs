@@ -35,7 +35,6 @@ COMMIT;
 *)
 
 open System
-open System.IO
 open Helpers
 open FsToolkit.ErrorHandling
 open Oracle.ManagedDataAccess.Client

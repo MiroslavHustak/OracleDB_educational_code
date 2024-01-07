@@ -1,26 +1,26 @@
 ﻿module DerivedTables
 
 (*
-SELECT *
-FROM (
+    SELECT *
+    FROM (
+        SELECT OperatorID, FirstName, LastName, JobTitle
+        FROM Operators
+        WHERE JobTitle = 'Manager'
+    ) DerivedTable;
+
+    OPERATORID FIRSTNAME                                          LASTNAME                                           JOBTITLE                                          
+    ---------- -------------------------------------------------- -------------------------------------------------- --------------------------------------------------
+             3 Bob                                                Johnson                                            Manager   
+
+    pro porovnani
+
     SELECT OperatorID, FirstName, LastName, JobTitle
     FROM Operators
-    WHERE JobTitle = 'Manager'
-) DerivedTable;
+    WHERE JobTitle = 'Manager';
 
-OPERATORID FIRSTNAME                                          LASTNAME                                           JOBTITLE                                          
----------- -------------------------------------------------- -------------------------------------------------- --------------------------------------------------
-         3 Bob                                                Johnson                                            Manager   
-
-pro porovnani
-
-SELECT OperatorID, FirstName, LastName, JobTitle
-FROM Operators
-WHERE JobTitle = 'Manager';
-
-OPERATORID FIRSTNAME                                          LASTNAME                                           JOBTITLE                                          
----------- -------------------------------------------------- -------------------------------------------------- --------------------------------------------------
-         3 Bob                                                Johnson                                            Manager    
+    OPERATORID FIRSTNAME                                          LASTNAME                                           JOBTITLE                                          
+    ---------- -------------------------------------------------- -------------------------------------------------- --------------------------------------------------
+             3 Bob                                                Johnson                                            Manager    
 *)
 open System
 open Helpers
